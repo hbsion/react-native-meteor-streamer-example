@@ -198,6 +198,7 @@ Meteor.Streamer = class Streamer extends EV {
 	}
 
 	addSubscription(subscription, eventName) {
+		console.log(eventName, "===")
 		this.subscriptions.push(subscription);
 
 		if (!this.subscriptionsByEventName[eventName]) {
@@ -287,6 +288,7 @@ Meteor.Streamer = class Streamer extends EV {
 
 			if (useCollection === true) {
 				// Collection compatibility
+				console.log(stream.subscriptionName, '======')
 				this._session.sendAdded(stream.subscriptionName, 'id', {
 					eventName: eventName
 				});
@@ -342,7 +344,6 @@ Meteor.Streamer = class Streamer extends EV {
 		if (!Array.isArray(subscriptions)) {
 			return;
 		}
-
 		subscriptions.forEach((subscription) => {
 			if (this.retransmitToSelf === false && origin && origin === subscription.subscription.connection) {
 				return;

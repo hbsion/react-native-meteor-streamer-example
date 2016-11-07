@@ -2,7 +2,6 @@ import { Template } from 'meteor/templating';
 import { ReactiveVar } from 'meteor/reactive-var';
 
 import './main.html';
-
 streamer = new Meteor.Streamer('chat')
 
 streamer.on('message', function(message) {
@@ -12,6 +11,15 @@ streamer.on('message', function(message) {
 Template.hello.onCreated(function helloOnCreated() {
   // counter starts at 0
   this.counter = new ReactiveVar(0);
+  Meteor.call("sayHello", "jdslfj", function(error, result){
+    if(error){
+      console.log("error", error);
+    }
+    if(result){
+      console.log(result);
+
+    }
+  });
 });
 
 Template.hello.helpers({

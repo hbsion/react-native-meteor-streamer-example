@@ -1,5 +1,7 @@
-/* globals DDPCommon, EV */
-/* eslint-disable new-cap */
+import EV from './EV';
+import Meteor from 'react-native-meteor';
+const Tracker = Meteor.Tracker;
+import {check, Match} from './check';
 
 const NonEmptyString = Match.Where(function (x) {
 	check(x, String);
@@ -20,9 +22,8 @@ class StreamerCentral extends EV {
 		if (ddpConnection.hasMeteorStreamerEventListeners) {
 			return;
 		}
-		ddpConnection._stream.on('message', (raw_msg) => {
-			const msg = DDPCommon.parseDDP(raw_msg);
-			console.log("==============", msg)
+		ddpConnection.socket.on('message:in', (msg) => {
+			// const msg = DDPCommon.parseDDP(raw_msg);
 			if (msg && msg.msg === 'changed' && msg.collection && msg.fields && msg.fields.eventName && msg.fields.args) {
 				msg.fields.args.unshift(msg.fields.eventName);
 				msg.fields.args.unshift(msg.collection);
@@ -41,34 +42,34 @@ class StreamerCentral extends EV {
 	}
 }
 
-Meteor.StreamerCentral = new StreamerCentral;
+Meteor.streamerCentral = new StreamerCentral();
+// export streamerCentral;
 
-Meteor.Streamer = class Streamer extends EV {
-	constructor(name, {useCollection = false, ddpConnection = Meteor.connection } = {}) {
-		if (Meteor.StreamerCentral.instances[name]) {
+export default class Streamer extends EV {
+	constructor(name, {useCollection = false, ddpConnection = Meteor.ddp } = {}) {
+		if (Meteor.streamerCentral.instances[name]) {
 			console.warn('Streamer instance already exists:', name);
-			return Meteor.StreamerCentral.instances[name];
+			return Meteor.streamerCentral.instances[name];
 		}
-		Meteor.StreamerCentral.setupDdpConnection(name, ddpConnection);
+		Meteor.streamerCentral.setupDdpConnection(name, ddpConnection);
 
 		super();
 
-		this.ddpConnection = ddpConnection || Meteor.connection;
+		this.ddpConnection = ddpConnection || Meteor.ddp;
 
-		Meteor.StreamerCentral.instances[name] = this;
+		Meteor.streamerCentral.instances[name] = this;
 
 		this.name = name;
 		this.useCollection = useCollection;
 		this.subscriptions = {};
-
-		Meteor.StreamerCentral.on(this.subscriptionName, (eventName, ...args) => {
+		Meteor.streamerCentral.on(this.subscriptionName, (eventName, ...args) => {
 			if (this.subscriptions[eventName]) {
 				this.subscriptions[eventName].lastMessage = args;
 				super.emit.call(this, eventName, ...args);
 			}
 		});
 
-		this.ddpConnection._stream.on('reset', () => {
+		this.ddpConnection.on('reset', () => {
 			super.emit.call(this, '__reconnect__');
 		});
 	}
@@ -118,7 +119,7 @@ Meteor.Streamer = class Streamer extends EV {
 	subscribe(eventName) {
 		let subscribe;
 		Tracker.nonreactive(() => {
-			subscribe = this.ddpConnection.subscribe(this.subscriptionName, eventName, this.useCollection, {
+			subscribe = Meteor.subscribe(this.subscriptionName, eventName, this.useCollection, {
 				onStop: () => {
 					this.unsubscribe(eventName);
 				}
@@ -167,6 +168,8 @@ Meteor.Streamer = class Streamer extends EV {
 	}
 
 	emit(...args) {
-		this.ddpConnection.call(this.subscriptionName, ...args);
+		Meteor.call(this.subscriptionName, ...args);
+		// this.ddpConnection.call(this.subscriptionName, ...args);
 	}
 };
+
