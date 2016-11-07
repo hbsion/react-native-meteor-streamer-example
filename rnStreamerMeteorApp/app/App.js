@@ -38,9 +38,16 @@ const App = (props) => {
         <Text>Get last message from event name 'message'</Text>
       </TouchableHighlight>
       <TouchableHighlight onPress={()=> {
-        chat.stop('event')
+        chat.stop('message')
       }}>
-        <Text>Get last message from event name 'message'</Text>
+        <Text>Stop listen stream message</Text>
+      </TouchableHighlight>      
+      <TouchableHighlight onPress={()=> {
+        chat.on("message", function(record){
+          console.log('stream message' + JSON.stringify(record));
+        });
+      }}>
+        <Text>reStart listen stream message</Text>
       </TouchableHighlight>
       <Text>
         hello world!
